@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0f;
+  --foreground: #e2e8f0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-slate-800;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image: 
+      radial-gradient(ellipse 80% 80% at 50% -20%, rgba(120, 80, 255, 0.15), transparent),
+      radial-gradient(ellipse 60% 60% at 80% 50%, rgba(80, 120, 255, 0.08), transparent),
+      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(160, 80, 255, 0.05), transparent);
+    min-height: 100vh;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0a0a0f;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-slate-900/50 backdrop-blur-xl border border-slate-800 shadow-xl;
+  }
+
+  .glass-hover {
+    @apply hover:bg-slate-800/50 hover:border-slate-700 transition-all duration-200;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent;
+  }
+
+  .glow {
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.15),
+                0 0 80px rgba(139, 92, 246, 0.05);
+  }
+
+  .glow-sm {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.1);
+  }
+
+  /* Animations */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Stage status colors */
+.stage-pending {
+  @apply border-l-4 border-l-slate-600;
+}
+
+.stage-active {
+  @apply border-l-4 border-l-violet-500;
+}
+
+.stage-completed {
+  @apply border-l-4 border-l-emerald-500;
+}
+
+/* Risk level backgrounds */
+.risk-low {
+  @apply bg-emerald-500/10 text-emerald-400;
+}
+
+.risk-medium {
+  @apply bg-amber-500/10 text-amber-400;
+}
+
+.risk-high {
+  @apply bg-orange-500/10 text-orange-400;
+}
+
+.risk-critical {
+  @apply bg-red-500/10 text-red-400;
+}

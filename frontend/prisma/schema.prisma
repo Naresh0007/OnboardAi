@@ -1,0 +1,356 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id                  String               @id @default(cuid())
+  name                String
+  subdomain           String               @unique
+  logoUrl             String?
+  primaryColor        String?
+  settings            Json                 @default("{}")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  clients             Client[]
+  invitations         Invitation[]
+  onboardingTemplates OnboardingTemplate[]
+  users               User[]
+
+  @@map("tenants")
+}
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  name          String?
+  passwordHash  String?
+  image         String?
+  emailVerified DateTime?
+  role          UserRole      @default(MEMBER)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  tenantId      String?
+  accounts      Account[]
+  activityLogs  ActivityLog[]
+  comments      Comment[]
+  sessions      Session[]
+  assignedTasks Task[]        @relation("AssignedTasks")
+  tenant        Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Invitation {
+  id        String           @id @default(cuid())
+  email     String
+  role      UserRole         @default(MEMBER)
+  token     String           @unique @default(cuid())
+  status    InvitationStatus @default(PENDING)
+  expiresAt DateTime
+  createdAt DateTime         @default(now())
+  tenantId  String
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("invitations")
+}
+
+model Client {
+  id          String       @id @default(cuid())
+  name        String
+  email       String
+  industry    String?
+  companySize String?
+  website     String?
+  logoUrl     String?
+  metadata    Json         @default("{}")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  tenantId    String
+  clientUsers ClientUser[]
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  onboardings Onboarding[]
+
+  @@map("clients")
+}
+
+model ClientUser {
+  id           String    @id @default(cuid())
+  email        String
+  name         String?
+  passwordHash String?
+  inviteToken  String?   @unique
+  invitedAt    DateTime  @default(now())
+  joinedAt     DateTime?
+  role         String    @default("primary")
+  clientId     String
+  client       Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([email, clientId])
+  @@map("client_users")
+}
+
+model OnboardingTemplate {
+  id           String          @id @default(cuid())
+  name         String
+  description  String?
+  industryType String?
+  isActive     Boolean         @default(true)
+  isDefault    Boolean         @default(false)
+  aiRules      Json            @default("{}")
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  tenantId     String
+  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  onboardings  Onboarding[]
+  stages       StageTemplate[]
+
+  @@map("onboarding_templates")
+}
+
+model StageTemplate {
+  id          String             @id @default(cuid())
+  name        String
+  description String?
+  order       Int
+  color       String             @default("#3B82F6")
+  templateId  String
+  template    OnboardingTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  tasks       TaskTemplate[]
+
+  @@map("stage_templates")
+}
+
+model TaskTemplate {
+  id             String        @id @default(cuid())
+  title          String
+  description    String?
+  type           TaskType      @default(ACTION)
+  isRequired     Boolean       @default(true)
+  order          Int
+  daysToComplete Int?
+  metadata       Json          @default("{}")
+  stageId        String
+  stage          StageTemplate @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  @@map("task_templates")
+}
+
+model Onboarding {
+  id               String             @id @default(cuid())
+  status           OnboardingStatus   @default(NOT_STARTED)
+  targetDate       DateTime?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  aiCustomizations Json               @default("{}")
+  metadata         Json               @default("{}")
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  clientId         String
+  templateId       String
+  activityLogs     ActivityLog[]
+  client           Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  template         OnboardingTemplate @relation(fields: [templateId], references: [id])
+  riskScore        RiskScore?
+  stages           StageInstance[]
+
+  @@map("onboardings")
+}
+
+model StageInstance {
+  id           String      @id @default(cuid())
+  name         String
+  description  String?
+  order        Int
+  color        String      @default("#3B82F6")
+  status       StageStatus @default(PENDING)
+  startedAt    DateTime?
+  completedAt  DateTime?
+  onboardingId String
+  onboarding   Onboarding  @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
+  tasks        Task[]
+
+  @@map("stage_instances")
+}
+
+model Task {
+  id           String        @id @default(cuid())
+  title        String
+  description  String?
+  type         TaskType      @default(ACTION)
+  status       TaskStatus    @default(PENDING)
+  isRequired   Boolean       @default(true)
+  order        Int
+  dueDate      DateTime?
+  completedAt  DateTime?
+  aiMetadata   Json          @default("{}")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  stageId      String
+  assignedToId String?
+  comments     Comment[]
+  documents    Document[]
+  assignedTo   User?         @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  stage        StageInstance @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  @@map("tasks")
+}
+
+model Document {
+  id         String         @id @default(cuid())
+  name       String
+  fileName   String
+  fileUrl    String
+  fileSize   Int
+  mimeType   String
+  status     DocumentStatus @default(UPLOADED)
+  uploadedAt DateTime       @default(now())
+  taskId     String
+  task       Task           @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  content    String
+  isInternal Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  taskId     String
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model RiskScore {
+  id           String     @id @default(cuid())
+  score        Int
+  level        RiskLevel
+  factors      Json       @default("[]")
+  suggestions  Json       @default("[]")
+  calculatedAt DateTime   @default(now())
+  onboardingId String     @unique
+  onboarding   Onboarding @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
+
+  @@map("risk_scores")
+}
+
+model ActivityLog {
+  id           String      @id @default(cuid())
+  action       String
+  entityType   String
+  entityId     String
+  metadata     Json        @default("{}")
+  createdAt    DateTime    @default(now())
+  userId       String?
+  onboardingId String?
+  onboarding   Onboarding? @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
+  user         User?       @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@map("activity_logs")
+}
+
+enum UserRole {
+  ADMIN
+  MEMBER
+  CLIENT
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+enum TaskType {
+  ACTION
+  DOCUMENT
+  FORM
+  ESIGN
+  REVIEW
+  MEETING
+}
+
+enum OnboardingStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  BLOCKED
+  COMPLETED
+  CANCELLED
+}
+
+enum StageStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  SKIPPED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  AWAITING_REVIEW
+  COMPLETED
+  SKIPPED
+}
+
+enum DocumentStatus {
+  UPLOADED
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  SIGNED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}

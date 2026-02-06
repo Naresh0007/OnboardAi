@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: onboard-db
+    environment:
+      POSTGRES_USER: portfolio_user
+      POSTGRES_PASSWORD: portfolio_pass
+      POSTGRES_DB: onboard_ai_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - onboard_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portfolio_user -d onboard_ai_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  onboard-api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: onboard-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=onboard_ai_db;Username=portfolio_user;Password=portfolio_pass
+    ports:
+      - "8081:8081"
+
+  onboard-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: onboard-frontend
+    depends_on:
+      - onboard-api
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=postgresql://portfolio_user:portfolio_pass@postgres:5432/onboard_ai_db
+      - NEXT_PUBLIC_API_URL=http://localhost:8081
+
+volumes:
+  onboard_data:
