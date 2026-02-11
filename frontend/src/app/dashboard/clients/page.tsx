@@ -18,93 +18,8 @@ import {
     ArrowUpRight
 } from "lucide-react"
 
-// Mock data
-const clients = [
-    {
-        id: "1",
-        name: "TechCorp Industries",
-        email: "contact@techcorp.io",
-        industry: "Technology",
-        status: "IN_PROGRESS",
-        progress: 65,
-        riskLevel: "LOW",
-        startDate: "2026-01-05",
-        targetDate: "2026-01-20",
-        stage: "Integration Setup",
-        tasksCompleted: 8,
-        totalTasks: 12
-    },
-    {
-        id: "2",
-        name: "FinanceFlow Ltd",
-        email: "onboarding@financeflow.com",
-        industry: "Fintech",
-        status: "IN_PROGRESS",
-        progress: 45,
-        riskLevel: "MEDIUM",
-        startDate: "2026-01-08",
-        targetDate: "2026-01-25",
-        stage: "Document Upload",
-        tasksCompleted: 5,
-        totalTasks: 11
-    },
-    {
-        id: "3",
-        name: "HealthTech Solutions",
-        email: "admin@healthtech.io",
-        industry: "Healthcare",
-        status: "BLOCKED",
-        progress: 30,
-        riskLevel: "HIGH",
-        startDate: "2026-01-02",
-        targetDate: "2026-01-17",
-        stage: "Compliance Review",
-        tasksCompleted: 3,
-        totalTasks: 10
-    },
-    {
-        id: "4",
-        name: "IoT Dynamics",
-        email: "setup@iotdynamics.com",
-        industry: "IoT",
-        status: "IN_PROGRESS",
-        progress: 85,
-        riskLevel: "LOW",
-        startDate: "2026-01-01",
-        targetDate: "2026-01-16",
-        stage: "Final Review",
-        tasksCompleted: 11,
-        totalTasks: 13
-    },
-    {
-        id: "5",
-        name: "GreenEnergy Co",
-        email: "tech@greenenergy.com",
-        industry: "Energy",
-        status: "NOT_STARTED",
-        progress: 0,
-        riskLevel: "LOW",
-        startDate: "2026-01-15",
-        targetDate: "2026-01-30",
-        stage: "Kickoff",
-        tasksCompleted: 0,
-        totalTasks: 9
-    },
-    {
-        id: "6",
-        name: "RetailMax Corp",
-        email: "integration@retailmax.com",
-        industry: "Retail",
-        status: "COMPLETED",
-        progress: 100,
-        riskLevel: "LOW",
-        startDate: "2025-12-15",
-        targetDate: "2026-01-05",
-        stage: "Completed",
-        tasksCompleted: 10,
-        totalTasks: 10
-    },
-]
+// Mock data removed
+
 
 const filters = ["All", "In Progress", "Blocked", "Not Started", "Completed"]
 
@@ -142,9 +57,8 @@ export default function ClientsPage() {
         fetchClients()
     }, [])
 
-    const allClients = [...realClients, ...clients]
+    const filteredClients = realClients.filter(client => {
 
-    const filteredClients = allClients.filter(client => {
         const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             client.email.toLowerCase().includes(searchQuery.toLowerCase())
 

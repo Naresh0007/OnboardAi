@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 
+const API_Base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5150';
+
 export async function createClient(formData: {
     name: string;
     email: string;
@@ -10,37 +12,26 @@ export async function createClient(formData: {
     industry?: string;
     companySize?: string;
 }) {
-    // Get the first tenant as a fallback for the demo
-    const tenant = await prisma.tenant.findFirst()
+    try {
+        const res = await fetch(`${API_Base}/api/clients`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
 
-    if (!tenant) {
-        throw new Error("No tenant found. Please seed the database.")
+        if (!res.ok) {
+            console.error(await res.text());
+            throw new Error("Failed to create client");
+        }
+
+        revalidatePath("/dashboard/clients")
+        revalidatePath("/dashboard")
+
+        return await res.json();
+    } catch (error) {
+        console.error("Failed to create client:", error)
+        throw error
     }
-
-    const client = await prisma.client.create({
-        data: {
-            name: formData.name,
-            email: formData.email,
-            website: formData.website,
-            industry: formData.industry,
-            companySize: formData.companySize,
-            tenantId: tenant.id,
-        }
-    })
-
-    // Create a default onboarding for the client
-    await prisma.onboarding.create({
-        data: {
-            clientId: client.id,
-            templateId: 'default-onboarding-template',
-            status: "IN_PROGRESS",
-        }
-    })
-
-    revalidatePath("/dashboard/clients")
-    revalidatePath("/dashboard")
-
-    return client
 }
 
 export async function getClients() {

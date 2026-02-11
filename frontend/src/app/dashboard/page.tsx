@@ -18,94 +18,8 @@ import {
     ArrowRight
 } from "lucide-react"
 
-// Mock data for demonstration
-const stats = [
-    {
-        title: "Active Onboardings",
-        value: "24",
-        change: "+12%",
-        trend: "up",
-        icon: Users,
-        color: "from-violet-500 to-indigo-500"
-    },
-    {
-        title: "Completed This Month",
-        value: "18",
-        change: "+8%",
-        trend: "up",
-        icon: CheckCircle2,
-        color: "from-emerald-500 to-teal-500"
-    },
-    {
-        title: "Avg. Time to Complete",
-        value: "4.2 days",
-        change: "-15%",
-        trend: "up",
-        icon: Clock,
-        color: "from-amber-500 to-orange-500"
-    },
-    {
-        title: "At Risk",
-        value: "3",
-        change: "-2",
-        trend: "down",
-        icon: AlertTriangle,
-        color: "from-red-500 to-rose-500"
-    },
-]
+// Data fetching handled in component
 
-const recentOnboardings = [
-    {
-        id: "1",
-        client: "TechCorp Industries",
-        email: "contact@techcorp.io",
-        status: "IN_PROGRESS",
-        progress: 65,
-        riskLevel: "LOW",
-        daysRemaining: 5,
-        stage: "Integration Setup"
-    },
-    {
-        id: "2",
-        client: "FinanceFlow Ltd",
-        email: "onboarding@financeflow.com",
-        status: "IN_PROGRESS",
-        progress: 45,
-        riskLevel: "MEDIUM",
-        daysRemaining: 8,
-        stage: "Document Upload"
-    },
-    {
-        id: "3",
-        client: "HealthTech Solutions",
-        email: "admin@healthtech.io",
-        status: "BLOCKED",
-        progress: 30,
-        riskLevel: "HIGH",
-        daysRemaining: 2,
-        stage: "Compliance Review"
-    },
-    {
-        id: "4",
-        client: "IoT Dynamics",
-        email: "setup@iotdynamics.com",
-        status: "IN_PROGRESS",
-        progress: 85,
-        riskLevel: "LOW",
-        daysRemaining: 1,
-        stage: "Final Review"
-    },
-    {
-        id: "5",
-        client: "GreenEnergy Co",
-        email: "tech@greenenergy.com",
-        status: "NOT_STARTED",
-        progress: 0,
-        riskLevel: "LOW",
-        daysRemaining: 14,
-        stage: "Kickoff"
-    },
-]
 
 const getStatusBadge = (status: string) => {
     switch (status) {
@@ -144,35 +58,68 @@ const getProgressVariant = (progress: number, riskLevel: string): "default" | "s
     return "default"
 }
 
-import { getClients } from "@/app/actions/clients"
+import { getDashboardStats, getRecentOnboardings, type DashboardStats, type RecentOnboarding } from "@/app/actions/dashboard"
 import { useEffect, useState } from "react"
 
 export default function DashboardPage() {
-    const [realOnboardings, setRealOnboardings] = useState<any[]>([])
+    const [statsData, setStatsData] = useState<DashboardStats | null>(null)
+    const [recentOnboardingsData, setRecentOnboardingsData] = useState<RecentOnboarding[]>([])
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        const fetchRecent = async () => {
+        const fetchData = async () => {
             try {
-                const data = await getClients()
-                const formatted = data.slice(0, 3).map(client => ({
-                    id: client.id,
-                    client: client.name,
-                    email: client.email,
-                    status: client.onboardings[0]?.status || "NOT_STARTED",
-                    progress: 0,
-                    riskLevel: "LOW",
-                    daysRemaining: 14,
-                    stage: "Kickoff"
-                }))
-                setRealOnboardings(formatted)
+                const [stats, recent] = await Promise.all([
+                    getDashboardStats(),
+                    getRecentOnboardings()
+                ])
+                setStatsData(stats)
+                setRecentOnboardingsData(recent)
             } catch (error) {
-                console.error("Failed to fetch recent onboardings:", error)
+                console.error("Failed to fetch dashboard data:", error)
+            } finally {
+                setLoading(false)
             }
         }
-        fetchRecent()
+        fetchData()
     }, [])
 
-    const allRecentOnboardings = [...realOnboardings, ...recentOnboardings]
+    const stats = [
+        {
+            title: "Active Onboardings",
+            value: statsData?.activeOnboardings.value || "0",
+            change: statsData?.activeOnboardings.change || "0%",
+            trend: statsData?.activeOnboardings.trend || "neutral",
+            icon: Users,
+            color: "from-violet-500 to-indigo-500"
+        },
+        {
+            title: "Completed This Month",
+            value: statsData?.completedThisMonth.value || "0",
+            change: statsData?.completedThisMonth.change || "0%",
+            trend: statsData?.completedThisMonth.trend || "neutral",
+            icon: CheckCircle2,
+            color: "from-emerald-500 to-teal-500"
+        },
+        {
+            title: "Avg. Time to Complete",
+            value: statsData?.avgTimeToComplete.value || "0",
+            change: statsData?.avgTimeToComplete.change || "0%",
+            trend: statsData?.avgTimeToComplete.trend || "neutral",
+            icon: Clock,
+            color: "from-amber-500 to-orange-500"
+        },
+        {
+            title: "At Risk",
+            value: statsData?.atRisk.value || "0",
+            change: statsData?.atRisk.change || "0",
+            trend: statsData?.atRisk.trend || "neutral",
+            icon: AlertTriangle,
+            color: "from-red-500 to-rose-500"
+        },
+    ]
+
+
 
     return (
         <div className="space-y-8 animate-fade-in">
@@ -230,45 +177,51 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        {allRecentOnboardings.map((onboarding) => (
-                            <div
-                                key={onboarding.id}
-                                className="flex items-center gap-4 p-4 rounded-xl bg-slate-800/30 hover:bg-slate-800/50 transition-colors cursor-pointer group"
-                            >
-                                <Avatar
-                                    fallback={onboarding.client}
-                                    size="lg"
-                                />
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h3 className="font-semibold text-white truncate">{onboarding.client}</h3>
-                                        {getStatusBadge(onboarding.status)}
-                                        {getRiskBadge(onboarding.riskLevel)}
-                                    </div>
-                                    <p className="text-sm text-slate-400 mb-2">{onboarding.email}</p>
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex-1 max-w-xs">
-                                            <Progress
-                                                value={onboarding.progress}
-                                                variant={getProgressVariant(onboarding.progress, onboarding.riskLevel)}
-                                                size="sm"
-                                            />
+                        {loading ? (
+                            <div className="text-center py-8 text-slate-500">Loading recent activity...</div>
+                        ) : recentOnboardingsData.length === 0 ? (
+                            <div className="text-center py-8 text-slate-500">No recent onboardings found.</div>
+                        ) : (
+                            recentOnboardingsData.map((onboarding) => (
+                                <div
+                                    key={onboarding.id}
+                                    className="flex items-center gap-4 p-4 rounded-xl bg-slate-800/30 hover:bg-slate-800/50 transition-colors cursor-pointer group"
+                                >
+                                    <Avatar
+                                        fallback={onboarding.client}
+                                        size="lg"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h3 className="font-semibold text-white truncate">{onboarding.client}</h3>
+                                            {getStatusBadge(onboarding.status)}
+                                            {getRiskBadge(onboarding.riskLevel)}
                                         </div>
-                                        <span className="text-sm text-slate-500">{onboarding.progress}%</span>
-                                        <span className="text-sm text-slate-500">•</span>
-                                        <span className="text-sm text-slate-500">{onboarding.stage}</span>
+                                        <p className="text-sm text-slate-400 mb-2">{onboarding.email}</p>
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex-1 max-w-xs">
+                                                <Progress
+                                                    value={onboarding.progress}
+                                                    variant={getProgressVariant(onboarding.progress, onboarding.riskLevel)}
+                                                    size="sm"
+                                                />
+                                            </div>
+                                            <span className="text-sm text-slate-500">{onboarding.progress}%</span>
+                                            <span className="text-sm text-slate-500">•</span>
+                                            <span className="text-sm text-slate-500">{onboarding.stage}</span>
+                                        </div>
                                     </div>
+                                    <div className="text-right">
+                                        <p className="text-sm text-slate-400">
+                                            {onboarding.daysRemaining} days remaining
+                                        </p>
+                                    </div>
+                                    <button className="p-2 rounded-lg hover:bg-slate-700/50 opacity-0 group-hover:opacity-100 transition-all">
+                                        <MoreHorizontal className="w-5 h-5 text-slate-400" />
+                                    </button>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-sm text-slate-400">
-                                        {onboarding.daysRemaining} days remaining
-                                    </p>
-                                </div>
-                                <button className="p-2 rounded-lg hover:bg-slate-700/50 opacity-0 group-hover:opacity-100 transition-all">
-                                    <MoreHorizontal className="w-5 h-5 text-slate-400" />
-                                </button>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </CardContent>
             </Card>
