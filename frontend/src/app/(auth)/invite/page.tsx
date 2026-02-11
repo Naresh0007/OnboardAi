@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { acceptInvite } from "@/app/actions/auth"
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { Loader2 } from "lucide-react"
 
-export default function InvitePage() {
+function InviteForm() {
     const searchParams = useSearchParams()
     const token = searchParams.get("token")
     const [loading, setLoading] = useState(false)
@@ -75,5 +75,17 @@ export default function InvitePage() {
                 </CardContent>
             </Card>
         </div>
+    )
+}
+
+export default function InvitePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+                <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+            </div>
+        }>
+            <InviteForm />
+        </Suspense>
     )
 }

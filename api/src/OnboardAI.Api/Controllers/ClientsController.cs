@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using OnboardAI.Domain.Entities;
 using OnboardAI.Infrastructure.Data;
 using OnboardAI.Domain.Enums;
+using OnboardAI.Application.Interfaces;
 
 namespace OnboardAI.Api.Controllers;
 
@@ -11,10 +12,12 @@ namespace OnboardAI.Api.Controllers;
 public class ClientsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly IEmailService _emailService;
 
-    public ClientsController(ApplicationDbContext context)
+    public ClientsController(ApplicationDbContext context, IEmailService emailService)
     {
         _context = context;
+        _emailService = emailService;
     }
 
     [HttpGet]
@@ -44,9 +47,21 @@ public class ClientsController : ControllerBase
             CompanySize = clientDto.CompanySize,
             TenantId = tenant.Id
         };
-
         _context.Clients.Add(client);
         
+        // Create Primary Client User
+        var inviteToken = Guid.NewGuid().ToString();
+        var clientUser = new ClientUser
+        {
+            Client = client,
+            Email = clientDto.Email,
+            Name = clientDto.Name,
+            Role = "admin",
+            InviteToken = inviteToken,
+            InvitedAt = DateTime.UtcNow
+        };
+        _context.ClientUsers.Add(clientUser);
+
         // Try to get a real template, or fallback to an empty Guid if needed
         var template = await _context.OnboardingTemplates.FirstOrDefaultAsync();
         
@@ -60,6 +75,9 @@ public class ClientsController : ControllerBase
         _context.Onboardings.Add(onboarding);
 
         await _context.SaveChangesAsync();
+
+        // Send Invite Email
+        await _emailService.SendInvitationEmailAsync(client.Email, client.Name, inviteToken);
 
         return CreatedAtAction(nameof(GetClients), new { id = client.Id }, client);
     }

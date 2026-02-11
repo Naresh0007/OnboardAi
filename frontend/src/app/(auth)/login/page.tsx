@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { login } from "@/app/actions/auth"
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { Loader2 } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 
-export default function LoginPage() {
+function LoginForm() {
     const searchParams = useSearchParams()
     const registered = searchParams.get("registered")
     const [loading, setLoading] = useState(false)
@@ -60,5 +60,17 @@ export default function LoginPage() {
                 </CardContent>
             </Card>
         </div>
+    )
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+                <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+            </div>
+        }>
+            <LoginForm />
+        </Suspense>
     )
 }

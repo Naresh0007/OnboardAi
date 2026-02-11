@@ -56,7 +56,8 @@ export async function login(formData: FormData) {
         const user = await res.json()
 
         // Set session cookie
-        cookies().set("client_session", JSON.stringify(user), {
+        const cookieStore = await cookies()
+        cookieStore.set("client_session", JSON.stringify(user), {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             maxAge: 60 * 60 * 24 * 7 // 1 week
@@ -70,11 +71,11 @@ export async function login(formData: FormData) {
 }
 
 export async function logout() {
-    cookies().delete("client_session")
+    (await cookies()).delete("client_session")
     redirect("/login")
 }
 
 export async function getClientSession() {
-    const session = cookies().get("client_session")?.value
+    const session = (await cookies()).get("client_session")?.value
     return session ? JSON.parse(session) : null
 }
